@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discussion Board Gallery</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe3ea;
+      --accent: #1d4ed8;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 3vw, 3rem);
+    }
+
+    .hero p {
+      margin: 0 auto;
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 1.05rem;
+    }
+
+    .view-switcher {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 28px 0 22px;
+      flex-wrap: wrap;
+    }
+
+    .view-btn,
+    .filter-btn {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .view-btn:hover,
+    .filter-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    .view-btn.active,
+    .filter-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .theme-filters {
+      display: none;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .theme-filters.show {
+      display: flex;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .group {
+      margin-bottom: 36px;
+    }
+
+    .group-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .group-title {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    .group-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .card img {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+      display: block;
+      background: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .card-body {
+      padding: 14px 16px 18px;
+    }
+
+    .card-title {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+      line-height: 1.4;
+    }
+
+    .card-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .site-footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      padding-top: 12px;
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1000;
+    }
+
+    .lightbox.hidden,
+    .hidden {
+      display: none !important;
+    }
+
+    .lightbox-content {
+      position: relative;
+      max-width: min(1100px, 95vw);
+      max-height: 90vh;
+      width: fit-content;
+    }
+
+    .lightbox-image {
+      display: block;
+      max-width: 100%;
+      max-height: 82vh;
+      width: auto;
+      height: auto;
+      border-radius: 14px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+      background: white;
+    }
+
+    .lightbox-caption {
+      color: white;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: -14px;
+      right: -14px;
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 999px;
+      background: white;
+      color: var(--text);
+      font-size: 1.4rem;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    @media (max-width: 640px) {
+      .card img { height: 240px; }
+      .page { padding-left: 14px; padding-right: 14px; }
+      .lightbox { padding: 14px; }
+      .lightbox-close {
+        top: -10px;
+        right: -4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <h1>Discussion Board Posts</h1>
+      <p>Browse posts by week or switch to a theme-based view. Each post image uses the PNG files directly and includes descriptive alt text and a title based on the week and discussion prompt.</p>
+    </header>
+
+    <div class="view-switcher" aria-label="Choose display view">
+      <button class="view-btn active" data-view="weekly" type="button">View by Week</button>
+      <button class="view-btn" data-view="theme" type="button">View by Theme</button>
+    </div>
+
+    <div class="theme-filters" id="themeFilters" aria-label="Filter themes">
+      <button class="filter-btn active" data-theme="all" type="button">All Themes</button>
+      <button class="filter-btn" data-theme="reporting-questioning" type="button">From Reporting to Questioning</button>
+      <button class="filter-btn" data-theme="ai-opportunity-threat" type="button">AI as Opportunity and Threat</button>
+      <button class="filter-btn" data-theme="possibilities-constraints" type="button">Possibilities Versus Constraints</button>
+    </div>
+
+    <section id="weeklyView" class="section active" aria-label="Posts grouped by week">
+
+      <!-- Week 2 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 2</h2>
+          <p class="group-meta">re: inclusion/universal design</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_two.png" alt="Week Two - re: inclusion/universal design discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Two - re: inclusion/universal design</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 3 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 3</h2>
+          <p class="group-meta">discussion post</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_three.png" alt="Week Three discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Three</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 4 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 4</h2>
+          <p class="group-meta">re: feedback</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_four.png" alt="Week Four - re: feedback discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Four - re: feedback</h3>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_four_2.png" alt="Week Four second discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Four (additional post)</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 5 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 5</h2>
+          <p class="group-meta">re: culturally-relevant pedagogy</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_five.png" alt="Week Five - re: culturally-relevant pedagogy discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Five - re: culturally-relevant pedagogy</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 6 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 6</h2>
+          <p class="group-meta">discussion post</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_six.png" alt="Week Six discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Six</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 7 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 7</h2>
+          <p class="group-meta">discussion post</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_seven.png" alt="Week Seven discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Seven</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 8 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 8</h2>
+          <p class="group-meta">discussion post</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_eight.png" alt="Week Eight discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Eight</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 9 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 9</h2>
+          <p class="group-meta">re: assessment and social justice</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_nine.png" alt="Week Nine - re: assessment and social justice discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Nine - re: assessment and social justice</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Week 10 -->
+      <div class="group">
+        <div class="group-header">
+          <h2 class="group-title">Week 10</h2>
+          <p class="group-meta">re: back_to_the_past</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_10.png" alt="Week Ten - re: back_to_the_past discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Ten - re: back_to_the_past</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+
+    </section>
+
+    <section id="themeView" class="section" aria-label="Posts grouped by theme">
+      <div class="group theme-group" data-theme="reporting-questioning">
+        <div class="group-header">
+          <h2 class="group-title">From Reporting to Questioning</h2>
+          <p class="group-meta">5 posts</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_two.png" alt="Week Two - re: inclusion/universal design discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Two - re: inclusion/universal design</h3>
+              <p class="card-subtitle">Week 2</p>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_four.png" alt="Week Four - re: feedback discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Four - re: feedback</h3>
+              <p class="card-subtitle">Week 4</p>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_five.png" alt="Week Five - re: culturally-relevant pedagogy discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Five - re: culturally-relevant pedagogy</h3>
+              <p class="card-subtitle">Week 5</p>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_nine.png" alt="Week Nine - re: assessment and social justice discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Nine - re: assessment and social justice</h3>
+              <p class="card-subtitle">Week 9</p>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_10.png" alt="Week Ten - re: back_to_the_past discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Ten - re: back_to_the_past</h3>
+              <p class="card-subtitle">Week 10</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="group theme-group" data-theme="ai-opportunity-threat">
+        <div class="group-header">
+          <h2 class="group-title">AI as Opportunity and Threat</h2>
+          <p class="group-meta">2 posts</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_nine.png" alt="Week Nine - re: assessment and social justice discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Nine - re: assessment and social justice</h3>
+              <p class="card-subtitle">Week 9</p>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_10.png" alt="Week Ten - re: back_to_the_past discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Ten - re: back_to_the_past</h3>
+              <p class="card-subtitle">Week 10</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="group theme-group" data-theme="possibilities-constraints">
+        <div class="group-header">
+          <h2 class="group-title">Possibilities Versus Constraints</h2>
+          <p class="group-meta">2 posts</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <img src="images/week_five.png" alt="Week Five - re: culturally-relevant pedagogy discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Five - re: culturally-relevant pedagogy</h3>
+              <p class="card-subtitle">Week 5</p>
+            </div>
+          </article>
+          <article class="card">
+            <img src="images/week_10.png" alt="Week Ten - re: back_to_the_past discussion post" />
+            <div class="card-body">
+              <h3 class="card-title">Week Ten - re: back_to_the_past</h3>
+              <p class="card-subtitle">Week 10</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+      <footer class="site-footer">
+      <p>Web page co-created with ChatGPT.</p>
+    </footer>
+      <footer class="site-footer">
+      <p>Web page co-created with ChatGPT.</p>
+    </footer>
+  </main>
+
+  <!-- Access Gate -->
+  <div id="accessGate" class="lightbox" aria-hidden="false">
+    <div class="lightbox-content" role="dialog" aria-modal="true" aria-label="Enter access code">
+      <h2 style="margin-top:0; text-align:center;">Enter Access Code</h2>
+      <input id="accessInput" type="password" placeholder="Enter code" style="width:100%; padding:12px; margin:12px 0; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+      <button id="accessSubmit" style="width:100%; padding:12px; border:none; border-radius:8px; background:#1d4ed8; color:white; font-size:1rem; cursor:pointer;">Unlock</button>
+      <p id="accessError" style="color:#ef4444; text-align:center; display:none; margin-top:10px;">Incorrect code</p>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden" aria-hidden="true">
+    <div class="lightbox-content" role="dialog" aria-modal="true" aria-label="Expanded discussion post image">
+      <button id="lightboxClose" class="lightbox-close" type="button" aria-label="Close expanded image">×</button>
+      <img id="lightboxImage" class="lightbox-image" src="" alt="" />
+      <p id="lightboxCaption" class="lightbox-caption"></p>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden" aria-hidden="true">
+    <div class="lightbox-content" role="dialog" aria-modal="true" aria-label="Expanded discussion post image">
+      <button id="lightboxClose" class="lightbox-close" type="button" aria-label="Close expanded image">×</button>
+      <img id="lightboxImage" class="lightbox-image" src="" alt="" />
+      <p id="lightboxCaption" class="lightbox-caption"></p>
+    </div>
+  </div>
+
+  <script>
+    const ACCESS_CODE = "2321"; // change this
+
+    const accessGate = document.getElementById('accessGate');
+    const accessInput = document.getElementById('accessInput');
+    const accessSubmit = document.getElementById('accessSubmit');
+    const accessError = document.getElementById('accessError');
+
+    function unlock() {
+      const value = accessInput.value.trim();
+      if (value === ACCESS_CODE) {
+        accessGate.classList.add('hidden');
+        document.body.style.overflow = '';
+      } else {
+        accessError.style.display = 'block';
+      }
+    }
+
+    accessSubmit.addEventListener('click', unlock);
+    accessInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') unlock();
+    });
+
+    document.body.style.overflow = 'hidden';
+
+    const viewButtons = document.querySelectorAll('.view-btn');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const weeklyView = document.getElementById('weeklyView');
+    const themeView = document.getElementById('themeView');
+    const themeFilters = document.getElementById('themeFilters');
+    const themeGroups = document.querySelectorAll('.theme-group');
+    const clickableImages = document.querySelectorAll('.card img');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const lightboxClose = document.getElementById('lightboxClose');
+
+    viewButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        viewButtons.forEach((btn) => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const selectedView = button.dataset.view;
+
+        if (selectedView === 'weekly') {
+          weeklyView.classList.add('active');
+          themeView.classList.remove('active');
+          themeFilters.classList.remove('show');
+        } else {
+          themeView.classList.add('active');
+          weeklyView.classList.remove('active');
+          themeFilters.classList.add('show');
+        }
+      });
+    });
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        filterButtons.forEach((btn) => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const selectedTheme = button.dataset.theme;
+
+        themeGroups.forEach((group) => {
+          if (selectedTheme === 'all' || group.dataset.theme === selectedTheme) {
+            group.classList.remove('hidden');
+          } else {
+            group.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    function openLightbox(image) {
+      lightboxImage.src = image.src;
+      lightboxImage.alt = image.alt;
+      lightboxCaption.textContent = image.alt;
+      lightbox.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      lightbox.classList.add('hidden');
+      lightboxImage.src = '';
+      lightboxCaption.textContent = '';
+      document.body.style.overflow = '';
+    }
+
+    clickableImages.forEach((image) => {
+      image.addEventListener('click', () => openLightbox(image));
+    });
+
+    lightboxClose.addEventListener('click', closeLightbox);
+
+    lightbox.addEventListener('click', (event) => {
+      if (event.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !lightbox.classList.contains('hidden')) {
+        closeLightbox();
+      }
+    });
+  </script>
+</body>
+</html>
+
